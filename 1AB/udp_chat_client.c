@@ -2,49 +2,88 @@
 
 int main(int argc, char** argv) {
 
-int progargs;
-char* arguments;
-extern char *optarg;
-extern int optind, optopt;
-
-if(argc != 7) {
-	printUsage();
-	return -1;
-}
-
-printf("%s\n", argv[6]);
-
-while((progargs = getopt(argc, argv, "s:p:u:")) != -1) {
-	switch (progargs) {
-		case ':':
-			printf("Missing arguments");
-			break;
-		case 's':
-			if(checkip(optarg) == -1)
-				printf("IP-Adress invalid!\n");
-			else
-				printf("IP-Adress is good!\n");
-			
-			break;
-		case 'p':
-			if(checkport(optarg) == -1)
-				printf("Portnumber invalid\n");
-			else
-				printf("Portnumber is good\n");
-			break;
-		case 'u':
-			if(checkusername(optarg) == -1)
-				printf("Username invalid\n");
-			else
-				printf("Username is good\n");
-			break;
+	int progargs, sock;
+    int err;
+	extern char *optarg;
+	char* ip;
+    char buff[16];
+	extern int optind, optopt;
+	struct sockaddr_in adress, dest;
+	int portnumber;
+	if(argc != 7) {
+		printUsage();
+		return -1;
 	}
+
+	while((progargs = getopt(argc, argv, "s:p:u:")) != -1) {
+		switch (progargs) {
+			case ':':
+				printf("Missing arguments");
+				break;
+			case 's':
+                ip = malloc((strlen(optarg)+1)*sizeof(char));
+				strcpy(ip, optarg);
+				if(checkip(optarg) == -1)
+					printf("IP-Adress invalid!\n");
+				else
+					printf("IP-Adress is good!\n");
+			
+				break;
+			case 'p':
+				portnumber = checkport(optarg);
+				if(portnumber == -1)
+					printf("Portnumber invalid\n");
+				else
+					printf("Portnumber is good\n");
+				break;
+			case 'u':
+				if(checkusername(optarg) == -1)
+					printf("Username invalid\n");
+				else
+					printf("Username is good\n");
+				break;
+		}
+	}
+
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+	adress.sin_family = AF_INET;
+	adress.sin_port = htons(portnumber);
+    adress.sin_addr.s_addr = htonl(INADDR_ANY);
+    
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(portnumber);
+	inet_aton(ip, &dest.sin_addr);
+
+	printf("%s\n", inet_ntoa(dest.sin_addr));
+    
+    err = bind(sock, (struct sockaddr *) &adress, sizeof(adress));	
+    if(err < 0) 
+        return printError();
+    
+    strcpy(buff, "SV_CON_REP 0x02");
+    err = sendto(sock, buff, sizeof(buff), 0, (struct sockaddr*) &dest, sizeof(struct sockaddr_in));
+    if(err < 0)
+        return printError();
+    socklen_t flen = sizeof(struct sockaddr_in);
+
+    err = recvfrom(sock, buff, sizeof(buff),0,(struct sockaddr*) &adress, &flen);
+    if(err < 0)
+        return printError();
+    printf("%s", buff);
+    
+
+    //cleanup
+    free(ip);
+    close(sock);	
+
+	return 1;
 }
 
-
-
-
-return 1;
+int printError() {
+    printf("%s\n", "Error");
+    return -1;
 }
 
 void printUsage() {
@@ -71,7 +110,7 @@ int checkport(char* portadress) {
 	port = strtol(portadress, &point, 10);
 	if(port < 0 || port > 65535 || point == NULL || *point != 0)
 		return -1;
-	return 0;
+	return (int)port;
 }
 
 int checkip(char* ipadress) {

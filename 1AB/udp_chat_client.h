@@ -8,6 +8,8 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "unp_readline.h"
 
 int main(int, char**);
@@ -15,5 +17,6 @@ void printUsage();
 int checkusername(char*);
 int checkport(char*);
 int checkip(char*);
+int printError();
 
 #endif /* UDP_CHAT_CLIENT_H */
