@@ -13,7 +13,7 @@ client: udp_chat_client.o unp_readline.o
 udp_chat_server.o: udp_chat_server.c
 	$(CC) $(CFLAGS) udp_chat_server.c
 
-udp_chat_client.o: udp_chat_client.c
+udp_chat_client.o: udp_chat_client.c udp_chat_client.h
 	$(CC) $(CFLAGS) udp_chat_client.c
 
 unp_readline.o: unp_readline.c unp_readline.h
