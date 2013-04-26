@@ -17,6 +17,6 @@ void printUsage();
 int checkusername(char*);
 int checkport(char*);
 int checkip(char*);
-int printError();
+
 
 #endif /* UDP_CHAT_CLIENT_H */

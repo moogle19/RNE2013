@@ -1,15 +1,13 @@
 #include "udp_chat_client.h"
+#include "udp_chat_client_connect.h"
 
 int main(int argc, char** argv) {
 
-	int progargs, sock;
-    int err;
+	int progargs, socket;
 	extern char *optarg;
-	char* ip;
-    char buff[16];
+	char* ip = "";
 	extern int optind, optopt;
-	struct sockaddr_in adress, dest;
-	int portnumber;
+	int portnumber = -1;
 	if(argc != 7) {
 		printUsage();
 		return -1;
@@ -23,68 +21,33 @@ int main(int argc, char** argv) {
 			case 's':
                 ip = malloc((strlen(optarg)+1)*sizeof(char));
 				strcpy(ip, optarg);
-				if(checkip(optarg) == -1)
-					printf("IP-Adress invalid!\n");
-				else
-					printf("IP-Adress is good!\n");
-			
+				if(checkip(optarg) == -1) {
+					printf("IP-Adress invalid!\n"); return -1;}
 				break;
 			case 'p':
 				portnumber = checkport(optarg);
-				if(portnumber == -1)
-					printf("Portnumber invalid\n");
-				else
-					printf("Portnumber is good\n");
+				if(portnumber == -1) {
+					printf("Portnumber invalid\n"); return -1;}
 				break;
 			case 'u':
-				if(checkusername(optarg) == -1)
-					printf("Username invalid\n");
-				else
-					printf("Username is good\n");
+				if(checkusername(optarg) == -1) {
+					printf("Username invalid\n"); return -1;}
 				break;
 		}
 	}
 
-
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-
-	adress.sin_family = AF_INET;
-	adress.sin_port = htons(portnumber);
-    adress.sin_addr.s_addr = htonl(INADDR_ANY);
+    socket = connectToSock(ip, portnumber, "test");
     
-    dest.sin_family = AF_INET;
-    dest.sin_port = htons(portnumber);
-	inet_aton(ip, &dest.sin_addr);
-
-	printf("%s\n", inet_ntoa(dest.sin_addr));
-    
-    err = bind(sock, (struct sockaddr *) &adress, sizeof(adress));	
-    if(err < 0) 
-        return printError();
-    
-    strcpy(buff, "SV_CON_REP 0x02");
-    err = sendto(sock, buff, sizeof(buff), 0, (struct sockaddr*) &dest, sizeof(struct sockaddr_in));
-    if(err < 0)
-        return printError();
-    socklen_t flen = sizeof(struct sockaddr_in);
-
-    err = recvfrom(sock, buff, sizeof(buff),0,(struct sockaddr*) &adress, &flen);
-    if(err < 0)
-        return printError();
-    printf("%s", buff);
+	
     
 
     //cleanup
     free(ip);
-    close(sock);	
+    close(socket);	
 
 	return 1;
 }
 
-int printError() {
-    printf("%s\n", "Error");
-    return -1;
-}
 
 void printUsage() {
 	printf("%s\n", "Usage: ./udp_chat_client -s \"IP-Adress\" -p \"portnumber\" -u \"username\"");
@@ -93,10 +56,8 @@ void printUsage() {
 int checkusername(char* username) {
 	int i, userlength;
 	userlength = strlen(username);
-	printf("%i\n", userlength);
 	char legalchars[] = "abcdefghijklmnopqrstuvwxyz1234567890";
 	i = strspn(username, legalchars);
-	printf("%i\n", i);
 	if(userlength != i)
 		return -1;
 	else
