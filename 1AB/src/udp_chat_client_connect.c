@@ -9,11 +9,12 @@
 int connectToSock(char* ipadress, int portnumber, char* name) {
     int sock, err;
     struct sockaddr_in origin, dest;
-    uint8_t sendbuffer[5];
-	char receiverbuffer[4096];
+    int sendbuffersize = (3+strlen(name));
+    char* sendbuffer = malloc(sendbuffersize*sizeof(char));
+    char receiverbuffer[32];
     fd_set readfds;
     struct timeval timeout = {5, 0};
-
+	printf("%i", strlen(sendbuffer));
     //create socket    
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     
@@ -36,23 +37,24 @@ int connectToSock(char* ipadress, int portnumber, char* name) {
         return printError();
     
     //copy connectionrequest to buffer
-    
-	sendbuffer[0] = 1;
-	sendbuffer[1] = 0;
-	sendbuffer[2] = 1;
-	sendbuffer[3] = 0;
 
     socklen_t flen = sizeof(struct sockaddr_in);
     FD_ZERO(&readfds);
         
     FD_SET(sock, &readfds);  
-	
+	sendbuffer[0] = (char) 1;
+	sendbuffer[1] = (char) 0;
+	sendbuffer[2] = (char) strlen(name);
+	int i = 0;
+	for(i = 0; i < strlen(name) + 0; i++) {
+		sendbuffer[i+3] = name[i];
+	}
+	printf("%s", sendbuffer);
 	printf("connecting...\n");
-    int i = 0;
     for(i = 0; i < 3; i++) {
         //send connectionrequest
 		timeout.tv_sec = 5;
-        err = sendto(sock, sendbuffer, sizeof(sendbuffer), 0, (struct sockaddr*) &dest, sizeof(struct sockaddr_in));
+        err = sendto(sock, sendbuffer, sendbuffersize, 0, (struct sockaddr*) &dest, sizeof(struct sockaddr_in));
         if(err < 0)     //error checking
             return printError();
 
@@ -75,7 +77,13 @@ int connectToSock(char* ipadress, int portnumber, char* name) {
 
     if(err < 0)
         return printError();
-    printf("%s\n", receiverbuffer);
+    
+    //int i = 0;
+    for(i = 0; i< 4; i++) {
+    	printf("%i", (int)receiverbuffer[i]);
+    }
+    printf("\n");
+    //printf("%s\n", receiverbuffer);
 
 	return 0;
 }

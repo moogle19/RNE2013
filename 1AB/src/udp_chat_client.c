@@ -17,6 +17,11 @@ int main(int argc, char** argv) {
 		switch (progargs) {
 			case ':':
 				printf("Missing arguments");
+				return -1;
+				break;
+			case '?':
+				printf("Invalid option!");
+				return -1;
 				break;
 			case 's':
                 ip = malloc((strlen(optarg)+1)*sizeof(char));

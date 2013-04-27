@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-c -Wall
 
 all:
-	server client
+	client
 
 server: udp_chat_server.o unp_readline.o
 	$(CC) udp_chat_server.o unp_readline.o -o udp_chat_server
