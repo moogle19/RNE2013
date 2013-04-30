@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 	
 	recvfrom(clientsock, recbuff, sizeof(recbuff), 0, (struct sockaddr*) &messageaddr, &flen);
 	
-	newUserMessage(recbuff);
+	getUserMessage(recbuff);
 	
 	char sendbuff[8];
 	sendbuff[0] = 4;
@@ -119,7 +119,7 @@ void printUsage() {
 	printf("%s\n", "Usage: ./udp_chat_client -s \"IP-Adress\" -p \"portnumber\" -u \"username\"");
 }
 
-void getNewUserMessage(uint8_t* buff) {
+void getUserMessage(uint8_t* buff) {
 	if(*buff == 3) {
 		uint16_t userlength = 0;
 		memcpy((buff+1), &userlength, sizeof(uint16_t));
@@ -131,12 +131,11 @@ void getNewUserMessage(uint8_t* buff) {
 	}
 }
 
-char* setMessage(uint8_t* message) {
+void setMessage(uint8_t* message, uint8_t* sendbuffer) {
 	*message = 4;
 	uint32_t messagelength = 0;
 	memcpy(message, &messagelength, sizeof(uint32_t));
-	char* messageout = malloc(messagelength*sizeof(char));
-	memcpy((message+4), messageout, messagelength*sizeof(char));
+	memcpy((message+4), sendbuffer, messagelength*sizeof(char));
 }
 
 
