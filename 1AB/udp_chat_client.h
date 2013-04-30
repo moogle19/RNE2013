@@ -33,6 +33,7 @@ int checkip(char*);
 int getClientsock();
 int connectToSock(char*,int,char*, int);
 char* getClconreq(char*);
+void newUserMessage(uint8_t*);
 uint16_t checkClconreq(uint8_t*);
 void setClconreq(uint8_t*,uint16_t,char*);
 int printError();

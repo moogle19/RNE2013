@@ -77,6 +77,11 @@ int main(int argc, char** argv) {
 	socklen_t flen = sizeof(struct sockaddr_in);
 	uint8_t recbuff[1024];
 	
+	
+	recvfrom(clientsock, recbuff, sizeof(recbuff), 0, (struct sockaddr*) &messageaddr, &flen);
+	
+	newUserMessage(recbuff);
+	
 	char sendbuff[8];
 	sendbuff[0] = 4;
 	sendbuff[1] = 0;
@@ -98,7 +103,7 @@ int main(int argc, char** argv) {
 	}
 	err = recvfrom(clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &messageaddr, &flen);
 	
-	printf("\n Message: %s", recbuff);
+	printf("\n Message: %s", (recbuff+2));
     
 
     //cleanup
@@ -112,6 +117,50 @@ int main(int argc, char** argv) {
 
 void printUsage() {
 	printf("%s\n", "Usage: ./udp_chat_client -s \"IP-Adress\" -p \"portnumber\" -u \"username\"");
+}
+
+void getNewUserMessage(uint8_t* buff) {
+	if(*buff == 3) {
+		uint16_t userlength = 0;
+		memcpy((buff+1), &userlength, sizeof(uint16_t));
+		printf("Länge = %c", *(buff+2));
+		char* retchar = malloc(userlength*sizeof(uint8_t));
+		memcpy((buff+3), retchar, (sizeof(char)*userlength));
+		printf("%s hat den Chat betreten.\n", retchar);
+		free(retchar);
+	}
+}
+
+char* setMessage(uint8_t* message) {
+	*message = 4;
+	uint32_t messagelength = 0;
+	memcpy(message, &messagelength, sizeof(uint32_t));
+	char* messageout = malloc(messagelength*sizeof(char));
+	memcpy((message+4), messageout, messagelength*sizeof(char));
+}
+
+
+void getMessage(uint8_t* message) {
+	uint16_t usernamelength = 0;
+	uint32_t messagelength = 0;
+	uint8_t offset = 1;
+	char* username;
+	char* usermessage;
+	
+	memcpy(message, &usernamelength, sizeof(uint16_t));
+	offset += sizeof(uint16_t);
+	username = malloc(usernamelength * sizeof(char));
+	
+	memcpy(message+offset, username, usernamelength*sizeof(char));
+	offset += usernamelength;
+	memcpy((message+offset), &messagelength, sizeof(uint32_t));
+	offset += sizeof(uint32_t);
+	usermessage = malloc(messagelength * sizeof(char));
+	memcpy((message+offset),usermessage, messagelength*sizeof(char));
+	
+	printf("<%s>: %s\n", username, usermessage);
+	free(username);
+	free(usermessage);
 }
 
 /**
