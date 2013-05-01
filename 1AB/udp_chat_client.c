@@ -13,6 +13,12 @@ const char ID_SV_PING_REQ = 9;
 const char ID_CL_PING_REP = 10;
 const char ID_SV_MSG = 11;
 
+int gContinue = 1;
+
+void handleSigInt(int param) {
+    gContinue = 0;
+}
+
 int main(int argc, char** argv) {
 	int progargs;
 	uint16_t messageport, userlength;
@@ -31,7 +37,6 @@ int main(int argc, char** argv) {
 		printUsage();
 		return -1;
 	}
-
 	while((progargs = getopt(argc, argv, "s:p:u:")) != -1) {
 		switch (progargs) {
 			case ':':
@@ -76,10 +81,14 @@ int main(int argc, char** argv) {
 	inet_pton(AF_INET, ip, &messageaddr.sin_addr);
 	socklen_t flen = sizeof(struct sockaddr_in);
 	uint8_t recbuff[1024];
+	char charbuffer[1024];
 	
-	
+    /*pthread_t thread;
+	int rc = pthread_create(&thread, NULL, messageThread, 0);
+    assert(0==rc);*/
+    
 	recvfrom(clientsock, recbuff, sizeof(recbuff), 0, (struct sockaddr*) &messageaddr, &flen);
-	
+    
 	getUserMessage(recbuff);
 	
 	char sendbuff[8];
@@ -87,55 +96,128 @@ int main(int argc, char** argv) {
 	sendbuff[1] = 0;
 	sendbuff[2] = 0;
 	sendbuff[3] = 0;
-	sendbuff[4] = 3;
+	sendbuff[4] = 2;
 	sendbuff[5] = 'h';
 	sendbuff[6] = 'i';
-	sendbuff[7] = '\0';
 	
 		
 	//err = recvfrom(clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &messageaddr, &flen);
 	
 	//printf("\n Message: %s", recbuff);	
 	
-	err = sendto(clientsock, sendbuff, sizeof(sendbuff), 0, (struct sockaddr*) &messageaddr, sizeof(struct sockaddr_in));
+	/*err = sendto(clientsock, sendbuff, sizeof(sendbuff), 0, (struct sockaddr*) &messageaddr, sizeof(struct sockaddr_in));
 	if(err < 0) {
 		printf("sendto fail");
-	}
-	err = recvfrom(clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &messageaddr, &flen);
-	
-	printf("\n Message: %s", (recbuff+2));
-    
+	}*/
+	//err = recvfrom(clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &messageaddr, &flen);   
+    printRecBuffer(recbuff);
+	int stdinfd = fcntl(STDIN_FILENO,  F_DUPFD, 0);
+	printf("id: %i\n", stdinfd);
+	fd_set readfds;
 
-    //cleanup
+	FD_ZERO(&readfds);	
+	FD_SET(clientsock, &readfds);
+	FD_SET(0, &readfds);
+	
+    sendMessage("test", clientsock, messageaddr);
+	while(1) {
+	FD_ZERO(&readfds);	
+	FD_SET(clientsock, &readfds);
+	FD_SET(0, &readfds);
+		err = select(clientsock+1 , &readfds, NULL, NULL, NULL);
+		if(FD_ISSET(clientsock, &readfds)) {
+			err = recvfrom(clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &messageaddr, &flen); 
+			printRecBuffer(recbuff);
+		}
+		if(FD_ISSET(0, &readfds)) {
+			 int consolelength = readline(0,charbuffer, 1024);
+			if(consolelength > 0) {
+				printf("Bla: %s\n", charbuffer);
+			}
+
+		}
+		
+	   
+		//sendMessage("test", clientsock, messageaddr);
+
+		//err = recvfrom(clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &messageaddr, &flen);   
+		//printRecBuffer(recbuff);
+		}
+    //getMessage(recbuff);
+    printf("ID: %i\n", *recbuff);
+    //cleanupr
     free(ip);
     free(namepoint);
     close(clientsock);
-
+    
+    while(gContinue) {
+        
+    }
 	return 1;
 }
-
 
 void printUsage() {
 	printf("%s\n", "Usage: ./udp_chat_client -s \"IP-Adress\" -p \"portnumber\" -u \"username\"");
 }
 
+void printRecBuffer(uint8_t* buff) {
+    switch(*buff) {
+		case 2:		//getConnectionRequest(buff);
+							break;
+        case 3:     	getUserMessage(buff);
+							break;
+		case 5:		getMessage(buff);
+							break;
+        case 11:    	getServerMessage(buff);
+							break;
+        default:    	printf("Buffer: %s", buff+1);
+							break;
+    }
+}
+
 void getUserMessage(uint8_t* buff) {
 	if(*buff == 3) {
 		uint16_t userlength = 0;
-		memcpy((buff+1), &userlength, sizeof(uint16_t));
-		printf("Länge = %c", *(buff+2));
-		char* retchar = malloc(userlength*sizeof(uint8_t));
-		memcpy((buff+3), retchar, (sizeof(char)*userlength));
+		memcpy(&userlength, (buff+1), sizeof(uint16_t));
+        userlength = ntohs(userlength);
+        printf("Length: %i\n", userlength);
+		char* retchar = malloc((userlength+1)*sizeof(char));
+        retchar[userlength] = '\0';
+		memcpy(retchar, (buff+3), (sizeof(char)*(userlength)));
 		printf("%s hat den Chat betreten.\n", retchar);
 		free(retchar);
 	}
+    else
+        printf("Fail!");
 }
 
-void setMessage(uint8_t* message, uint8_t* sendbuffer) {
-	*message = 4;
-	uint32_t messagelength = 0;
-	memcpy(message, &messagelength, sizeof(uint32_t));
-	memcpy((message+4), sendbuffer, messagelength*sizeof(char));
+void getServerMessage(uint8_t* message) {
+    uint32_t messagelength = 0;
+    int offset = 1;
+    memcpy(&messagelength, (message+offset), sizeof(uint32_t));
+    messagelength = ntohl(messagelength);
+    offset += sizeof(uint32_t);
+    char* out = malloc((messagelength+1)*sizeof(char));
+    out[messagelength] = '\0';
+    memcpy(out, message+offset, messagelength*sizeof(char));
+    printf("#server#: %s\n", out);
+    free(out);
+}
+
+void sendMessage(char* message, int clientsocket, struct sockaddr_in messageaddr) {
+	uint32_t messagelength = strlen(message);
+    uint8_t* sendbuffer = malloc((5+messagelength)*sizeof(uint8_t));
+    *sendbuffer = 4;
+    int offset = 1;
+	memcpy((sendbuffer+offset), &messagelength, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+	memcpy(sendbuffer+offset, message, messagelength*sizeof(char));
+	printf("send: %s", sendbuffer+4);
+	int err = sendto(clientsocket, sendbuffer, (5+messagelength), 0, (struct sockaddr*) &messageaddr, sizeof(struct sockaddr_in));
+	if(err < 0) {
+		printf("Sending of Message failed!");
+	}
+    free(sendbuffer);
 }
 
 
@@ -146,16 +228,16 @@ void getMessage(uint8_t* message) {
 	char* username;
 	char* usermessage;
 	
-	memcpy(message, &usernamelength, sizeof(uint16_t));
+	memcpy(&usernamelength, message+offset, sizeof(uint16_t));
 	offset += sizeof(uint16_t);
-	username = malloc(usernamelength * sizeof(char));
+	username = malloc((usernamelength+1) * sizeof(char));
 	
-	memcpy(message+offset, username, usernamelength*sizeof(char));
+	memcpy(username, message+offset, usernamelength*sizeof(char));
 	offset += usernamelength;
-	memcpy((message+offset), &messagelength, sizeof(uint32_t));
+	memcpy(&messagelength, (message+offset), sizeof(uint32_t));
 	offset += sizeof(uint32_t);
-	usermessage = malloc(messagelength * sizeof(char));
-	memcpy((message+offset),usermessage, messagelength*sizeof(char));
+	usermessage = malloc((messagelength + 1) * sizeof(char));
+	memcpy(usermessage, (message+offset),messagelength*sizeof(char));
 	
 	printf("<%s>: %s\n", username, usermessage);
 	free(username);
