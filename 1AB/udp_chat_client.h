@@ -30,6 +30,7 @@ extern const char ID_SV_MSG;
 
 int main(int, char**);
 void handleSigInt(int);
+void answerPing(int , struct sockaddr_in );
 void printUsage();
 int checkusername(char*, char*);
 int checkport(char*);
@@ -39,7 +40,7 @@ int connectToSock(char*,int,char*, int);
 char* getClconreq(char*);
 void getUserMessage(uint8_t*);
 void getServerMessage(uint8_t*);
-void printRecBuffer(uint8_t*);
+void printRecBuffer(uint8_t*, int, struct sockaddr_in);
 void sendMessage(char*, int, struct sockaddr_in);
 void getMessage(uint8_t*);
 void* messageThread(void*);
