@@ -106,11 +106,97 @@ int main(int argc, char** argv) {
 	return 1;
 }
 
-void sendMessage(char* message, struct sockaddr_in messageaddr,  int clientsocket) {
+int disconnectFromServer(struct sockaddr_in* serveraddr, int clientsock) {
+	int err = 0;
+	
+	uint8_t reqbuff[1024];
+	fd_set readfds;
+	
+	struct timeval timeout = {5, 0};	
+	
+	socklen_t flen = sizeof(struct sockaddr_in);
+	
+	//get Hostname
+	char hostname[1025] = "testserver";
+	hostname[1024] = '\0';
+	//err = getnameinfo((struct sockaddr*) &dest, flen, hostname, 1024, NULL, 0, 0);
+	if(err < 0) {
+		fprintf(stderr, "hostname error");
+	}
+	
+	FD_ZERO(&readfds);	
+	FD_SET(clientsock, &readfds);
+		
+	char ipstring[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &(serveraddr->sin_addr), ipstring, INET_ADDRSTRLEN);
+	
+    printf("Beende die Verbindung zu Server %s (%s).\n", hostname, ipstring);
+    
+        
+	int i = 0;
+	for(i = 0; i < 3; i++) {
+		timeout.tv_sec = 5;
+		//send message
+		if(sendDisconnect(serveraddr, clientsock) < 0) {
+			printf("Sending Disc-Request failed!\n");
+		}
+		
+		
+		//wait for answer of server
+		err = select(clientsock + 1, &readfds, NULL, NULL, &timeout);
+		
+		//if server answered receive message
+		if(FD_ISSET(clientsock, &readfds)) {
+			err = recvfrom(clientsock, reqbuff, sizeof(reqbuff),0,(struct sockaddr*) serveraddr, &flen);
+			break;
+		}
+		
+		if(i < 2)
+			printf("No Answer. Sending new request!\n");
+		else {
+			printf("Verbindung nicht erfolgreich beendet. Timeout.\n");
+            gContinue = 0;
+			return -1;
+		}
+	}
+
+	if(err < 0)
+		return -1;
+    
+    if(*reqbuff == 7) {
+        gContinue = 0;
+        printf("Verbindung erfolgreich beendet.\n");
+        return 0;
+    }
+    else {
+        gContinue = 0;
+        printf("Falsche Nachricht vom Server erhalten.\n");
+        return -1;
+    }
+    
+    
+    
+	return -1;
+}
+
+int sendDisconnect(struct sockaddr_in* serveraddr, int clientsock) {
+	int err = 0;
+	uint8_t id = 6;
+	
+   
+	err = sendto(clientsock, &id, 1, 0, (struct sockaddr*) serveraddr, sizeof(struct sockaddr_in));
+	if(err < 0)  //error checking
+		return -1;
+	return 0;
+}
+
+
+void sendMessage(char* message, struct sockaddr_in serveraddr,  int clientsock) {
 	uint32_t messagelength = strlen(message) - 1;
     char* discon = "/disconnect";
     if(messagelength == 11 && strncmp(message, discon, 11) == 0) {
         printf("Disconnect!\n");
+        disconnectFromServer(&serveraddr, clientsock);
     }
     else {
         uint32_t networklength = htonl(messagelength);
@@ -121,7 +207,7 @@ void sendMessage(char* message, struct sockaddr_in messageaddr,  int clientsocke
         offset += sizeof(uint32_t);
     	memcpy(sendbuff+offset, message, messagelength*sizeof(char));
 
-    	int err = sendto(clientsocket, sendbuff, (messagelength+5), 0, (struct sockaddr*) &messageaddr, sizeof(struct sockaddr_in));
+    	int err = sendto(clientsock, sendbuff, (messagelength+5), 0, (struct sockaddr*) &serveraddr, sizeof(struct sockaddr_in));
 		free(sendbuff);
     	if(err < 0) {
     		printf("Sending of Message failed!");
@@ -137,13 +223,30 @@ void parseRecBuffer(uint8_t* buff, int clientsocket, struct sockaddr_in serverad
 							break;
 		case 5:	        printMessage(buff);
 							break;
+        case 8:         printDisconnectMessage(buff);
+                        break;
         case 9:         sendPing(serveraddr, clientsocket);
                             break;
         case 11:    	printServerMessage(buff);
 							break;
-        default:    		printf("Buffer: %s\n", buff+5);
+        default:    		printf("ID: %i Buffer: %s\n", *buff, buff+5);
 							break;
     }
+}
+
+void printDisconnectMessage(uint8_t* buff) {
+	if(*buff == 8) {
+		uint16_t userlength = 0;
+		memcpy(&userlength, (buff+1), sizeof(uint16_t));
+        userlength = ntohs(userlength);
+		char* retchar = malloc((userlength+1)*sizeof(char));
+        retchar[userlength] = '\0';
+		memcpy(retchar, (buff+3), (sizeof(char)*(userlength)));
+		printf("%s hat den Chat verlassen.\n", retchar);
+		free(retchar);
+	}
+    else
+        printf("Fail!\n");
 }
 
 /**

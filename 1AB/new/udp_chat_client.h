@@ -47,13 +47,14 @@ void parseRecBuffer(uint8_t*, int, struct sockaddr_in);
 void printUserMessage(uint8_t*);
 void printMessage(uint8_t*);
 void printServerMessage(uint8_t*);
+void printDisconnectMessage(uint8_t*);
 
 void sendMessage(char*, struct sockaddr_in, int);
 
 void sendPing(struct sockaddr_in, int);
 
-void disconnectFromServer(struct sockaddr_in, int);
-void sendDisconnect(struct sockaddr_in, int);
+int disconnectFromServer(struct sockaddr_in*, int);
+int sendDisconnect(struct sockaddr_in*, int);
 
 void printUsage();
 
