@@ -117,15 +117,12 @@ int disconnectFromServer(struct sockaddr_in* serveraddr, int clientsock) {
 	socklen_t flen = sizeof(struct sockaddr_in);
 	
 	//get Hostname
-	char hostname[1025] = "testserver";
+	char hostname[1025];// = "testserver";
 	hostname[1024] = '\0';
-	//err = getnameinfo((struct sockaddr*) &dest, flen, hostname, 1024, NULL, 0, 0);
+	err = getnameinfo((struct sockaddr*) serveraddr, flen, hostname, 1024, NULL, 0, 0);
 	if(err < 0) {
 		fprintf(stderr, "hostname error");
 	}
-	
-	FD_ZERO(&readfds);	
-	FD_SET(clientsock, &readfds);
 		
 	char ipstring[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(serveraddr->sin_addr), ipstring, INET_ADDRSTRLEN);
@@ -135,6 +132,8 @@ int disconnectFromServer(struct sockaddr_in* serveraddr, int clientsock) {
         
 	int i = 0;
 	for(i = 0; i < 3; i++) {
+    	FD_ZERO(&readfds);	
+    	FD_SET(clientsock, &readfds);
 		timeout.tv_sec = 5;
 		//send message
 		if(sendDisconnect(serveraddr, clientsock) < 0) {
@@ -148,7 +147,13 @@ int disconnectFromServer(struct sockaddr_in* serveraddr, int clientsock) {
 		//if server answered receive message
 		if(FD_ISSET(clientsock, &readfds)) {
 			err = recvfrom(clientsock, reqbuff, sizeof(reqbuff),0,(struct sockaddr*) serveraddr, &flen);
-			break;
+			if(*reqbuff == 7) {
+                break;
+            }
+            else {
+                parseRecBuffer(reqbuff, clientsock, *serveraddr);
+                i--;
+            }
 		}
 		
 		if(i < 2)
@@ -179,11 +184,12 @@ int disconnectFromServer(struct sockaddr_in* serveraddr, int clientsock) {
 	return -1;
 }
 
+
+
+
 int sendDisconnect(struct sockaddr_in* serveraddr, int clientsock) {
 	int err = 0;
 	uint8_t id = 6;
-	
-   
 	err = sendto(clientsock, &id, 1, 0, (struct sockaddr*) serveraddr, sizeof(struct sockaddr_in));
 	if(err < 0)  //error checking
 		return -1;
@@ -195,7 +201,6 @@ void sendMessage(char* message, struct sockaddr_in serveraddr,  int clientsock) 
 	uint32_t messagelength = strlen(message) - 1;
     char* discon = "/disconnect";
     if(messagelength == 11 && strncmp(message, discon, 11) == 0) {
-        printf("Disconnect!\n");
         disconnectFromServer(&serveraddr, clientsock);
     }
     else {
@@ -229,7 +234,7 @@ void parseRecBuffer(uint8_t* buff, int clientsocket, struct sockaddr_in serverad
                             break;
         case 11:    	printServerMessage(buff);
 							break;
-        default:    		printf("ID: %i Buffer: %s\n", *buff, buff+5);
+        default:    	printf("ID: %i Buffer: %s\n", *buff, buff+5);
 							break;
     }
 }
@@ -350,9 +355,9 @@ void printUserMessage(uint8_t* buff) {
 	socklen_t flen = sizeof(struct sockaddr_in);
 	
 	//get Hostname
-	char hostname[1025] = "testserver";
+	char hostname[1025];// = "testserver";
 	hostname[1024] = '\0';
-	//err = getnameinfo((struct sockaddr*) &dest, flen, hostname, 1024, NULL, 0, 0);
+	err = getnameinfo((struct sockaddr*) serveraddr, flen, hostname, 1024, NULL, 0, 0);
 	if(err < 0) {
 		fprintf(stderr, "hostname error");
 	}

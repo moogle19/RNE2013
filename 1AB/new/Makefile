@@ -2,8 +2,7 @@ CC=gcc
 CFLAGS=-c -Wall
 LINKFLAGS= -pthread
 
-all:
-	client
+all: client server
 
 server: udp_chat_server.o unp_readline.o
 	$(CC) udp_chat_server.o unp_readline.o -o udp_chat_server
