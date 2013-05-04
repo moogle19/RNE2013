@@ -82,6 +82,7 @@ int main(int argc, char** argv) {
 	
 	fd_set readfds;
 	int err = 0;
+    
 	while(gContinue) {
 	    FD_ZERO(&readfds);	
 	    FD_SET(clientsock, &readfds);
