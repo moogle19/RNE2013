@@ -5,7 +5,7 @@ LINKFLAGS= -pthread
 all: client server
 
 server: udp_chat_server.o unp_readline.o
-	$(CC) udp_chat_server.o unp_readline.o -o udp_chat_server
+	$(CC) $(LINKFLAGS) udp_chat_server.o unp_readline.o -o udp_chat_server
 
 client: udp_chat_client.o unp_readline.o
 	$(CC) $(LINKFLAGS) udp_chat_client.o unp_readline.o -o udp_chat_client

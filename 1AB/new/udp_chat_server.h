@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <pthread.h>
 #include "unp_readline.h"
 
 extern const char ID_CL_CON_REQ;
@@ -33,6 +34,8 @@ struct client
 	struct sockaddr_in clientaddr;
 	char* username;
     int clientsock;
+	pthread_t thread;
+	struct client* before;
 	struct client* next;
 };
 
@@ -47,13 +50,15 @@ int checkUsername(char*);
 //client handling
 int addClient(char*, struct sockaddr_in, int);
 int removeClient();
+void* startUserThread(void*);
+int sendPing(int, struct sockaddr_in);
+void deleteClient(struct client*);
 
 //messaging
-void broadcastUserMessage(char*, int);
-void broadcastMessage();
-void broadcastDisconnectMessage();
+void broadcastUserMessage(char*);
+void broadcastMessage(char*, char*);
+void broadcastDisconnectMessage(char*);
 
-int cleanClients();
 
 void printUsage();
 
