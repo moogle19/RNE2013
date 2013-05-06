@@ -49,7 +49,7 @@ void printMessage(uint8_t*);
 void printServerMessage(uint8_t*);
 void printDisconnectMessage(uint8_t*);
 
-void sendMessage(char*, struct sockaddr_in, int);
+int sendMessage(char*, struct sockaddr_in, int);
 
 void sendPing(struct sockaddr_in, int);
 
