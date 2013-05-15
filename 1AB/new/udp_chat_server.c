@@ -175,14 +175,20 @@ int addClient(char* buff, struct sockaddr_in clientaddr, int serversock) {
 		*(message+1) = 1;
 		uint16_t initPort = 0;
 		memcpy(message+2, &initPort, sizeof(uint16_t));
-		sendto(serversock, message, 4, 0, (struct sockaddr *)&clientaddr, sizeof(clientaddr));
+		err = sendto(serversock, message, 4, 0, (struct sockaddr *)&clientaddr, sizeof(clientaddr));
+		if(err < 0) {
+			return -1;
+		}
 		free(name);
 	}
 	else {
 		//else add client to linked list
     	int newsock = socket(AF_INET, SOCK_DGRAM, 0);
         err = bind(newsock, (struct sockaddr *) &newaddr, sizeof(newaddr));
-        getsockname(newsock, (struct sockaddr *) &newaddr, &flen);
+        if(err < 0) {
+			return -1;
+		}
+		getsockname(newsock, (struct sockaddr *) &newaddr, &flen);
                 
         
 		if(clientcount == 0) {
@@ -209,7 +215,10 @@ int addClient(char* buff, struct sockaddr_in clientaddr, int serversock) {
         *(message+1) = 0; 
 		uint16_t port = newaddr.sin_port;
 		memcpy(message+2, &port, sizeof(uint16_t));
-		sendto(serversock, message, 4, 0, (struct sockaddr *)&clientaddr, sizeof(clientaddr));
+		err = sendto(serversock, message, 4, 0, (struct sockaddr *)&clientaddr, sizeof(clientaddr));
+		if(err < 0) {
+			return -1;
+		}
 		broadcastUserMessage(name);
 		//create new thread for client
 		int rc;
