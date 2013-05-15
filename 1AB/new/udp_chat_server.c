@@ -214,6 +214,9 @@ int addClient(char* buff, struct sockaddr_in clientaddr, int serversock) {
 		//create new thread for client
 		int rc;
 		rc = pthread_create(&(currentclient->thread), NULL, startUserThread, currentclient);
+		if(rc < 0) {
+			return -1;	
+		}
 	}
 	
 	return 0;
@@ -312,6 +315,9 @@ void *startUserThread(void* args) {
         
 		err = select(cl->clientsock+1 , &readfds, NULL, NULL, &timeout);
         
+		if(err < 0) {
+			tContinue = 0;
+		}
 		if(FD_ISSET(cl->clientsock, &readfds)) {
 			err = recvfrom(cl->clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &cl->clientaddr, &flen);
 			//ping answer
