@@ -22,7 +22,7 @@ void handleSigInt(int param) {
 int main(int argc, char** argv) {
 	int progargs;
 	int err = 0;
-	uint16_t userlength;
+	uint32_t userlength;
 	//struct sockaddr_in messageaddr;
 	extern char *optarg;
 	char username[65535];
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 					printf("Portnumber invalid\n"); return -1;}
 				break;
 			case 'u':
-				userlength = strlen(optarg);
+				userlength = (uint32_t)strlen(optarg);
 				if(userlength > 65535) {
 					printf("Username too long!\n");
 					return -1;
@@ -133,7 +133,7 @@ int disconnectFromServer(struct sockaddr_in* serveraddr, int clientsock) {
 	socklen_t flen = sizeof(struct sockaddr_in);
 	
 	//get Hostname
-	char hostname[1025];// = "testserver";
+	char hostname[1025];
 	hostname[1024] = '\0';
 	err = getnameinfo((struct sockaddr*) serveraddr, flen, hostname, 1024, NULL, 0, 0);
 	if(err < 0) {
@@ -249,16 +249,30 @@ void parseRecBuffer(uint8_t* buff, int clientsocket, struct sockaddr_in serverad
 							break;
 		case 5:	        printMessage(buff);
 							break;
-        case 8:         printDisconnectMessage(buff);
+		case 7:			printServerDisconnect(buff);
+							break;
+		case 8:         printDisconnectMessage(buff);
 							break;
         case 9:         sendPing(serveraddr, clientsocket);
                             break;
         case 11:    	printServerMessage(buff);
 							break;
-        default:    		printf("Received wrong message from server!\n");
+        default:    		printf("Received wrong message from server! ID: %i\n", *buff);
 							break;
     }
 }
+
+/**
+ *	print server disconnect message
+ */
+void printServerDisconnect(uint8_t* buff) {
+	if(*buff == 7) {
+		gContinue = 0;
+		printf("Server disconnected!Quitting client!\n");
+	}
+}
+
+
 
 /**
  *	print message of other clients disconnect
@@ -512,7 +526,7 @@ int checkPort(char* portadress, struct sockaddr_in *serveraddr) {
 	long int port;
 	char* point;
 	port = strtol(portadress, &point, 10);
-	if(port < 0 || port > 65535 || point == NULL || *point != 0)
+	if(port <= 1024 || port > 65535 || point == NULL || *point != 0)
 		return -1;
 	else {
 		serveraddr->sin_port = htons( ( (uint16_t) port ) );
@@ -526,7 +540,7 @@ int checkPort(char* portadress, struct sockaddr_in *serveraddr) {
 int checkUsername(char* username, char* namepoint) {
 	int i, userlength;
 	userlength = strlen(username);
-	char legalchars[] = "abcdefghijklmnopqrstuvwxyz1234567890";
+	char legalchars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
 	i = strspn(username, legalchars);
 	if(userlength != i)
 		return -1;

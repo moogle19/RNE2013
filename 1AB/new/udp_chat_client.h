@@ -48,6 +48,7 @@ void printUserMessage(uint8_t*);
 void printMessage(uint8_t*);
 void printServerMessage(uint8_t*);
 void printDisconnectMessage(uint8_t*);
+void printServerDisconnect(uint8_t*);
 
 int sendMessage(char*, struct sockaddr_in, int);
 

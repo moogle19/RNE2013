@@ -255,8 +255,9 @@ void deleteClient(struct client* toDelete) {
 	--clientcount;
 	
 	//if client disconnects not during a server shutdown send disconnect message to all clients
+	sendDisconnect (toDelete);
 	if(gContinue) {
-		sendDisconnect(toDelete);
+		//sendDisconnect(toDelete);
 		broadcastDisconnectMessage(toDelete->username);
 	}
 	//free and close everything
@@ -400,7 +401,7 @@ int sendPing(int clientsock, struct sockaddr_in clientaddr) {
 int checkUsername(char* username) {
 	int i, userlength;
 	userlength = strlen(username);
-	char legalchars[] = "abcdefghijklmnopqrstuvwxyz1234567890";
+	char legalchars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
 	i = strspn(username, legalchars);
 	if(userlength != i) {
 		return -1;
@@ -427,7 +428,7 @@ int setPort(char* portadress, struct sockaddr_in* serveraddr) {
 	long int port;
 	char* point;
 	port = strtol(portadress, &point, 10);
-	if(port < 0 || port > 65535 || point == NULL || *point != 0)
+	if(port <= 1024 || port > 65535 || point == NULL || *point != 0)
 		return -1;
 	else {
 		serveraddr->sin_port = htons( ( (uint16_t) port ) );
