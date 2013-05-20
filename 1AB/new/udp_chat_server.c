@@ -71,6 +71,7 @@ int main(int argc, char** argv) {
 	
 	err = bind(serversock, (struct sockaddr *) &serveraddr, sizeof(serveraddr));
 	if(err < 0) {
+		printf("Socket binding failed!\n");
 		return -1;
 	}
 	
@@ -120,7 +121,7 @@ void broadcastUserMessage(char* name) {
     uint16_t n_namesize = htons(h_namesize);
 	
     char* message = malloc((3+h_namesize)*sizeof(char));
-	
+;	
     struct client* current = firstclient;
 	
 	//copy message into buffer

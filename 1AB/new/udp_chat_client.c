@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
 	//connect to the Messageserver
 	err = connectToServer(&serveraddr, username, clientsock);
 	if(err < 0) {
+		printf("Serverconnect failed! \n");
 		return -1;
 	}
 	
@@ -92,7 +93,9 @@ int main(int argc, char** argv) {
 	    FD_SET(0, &readfds);
         
 		err = select(clientsock+1 , &readfds, NULL, NULL, &timeout);
-        
+        if(err < 0) {
+			printf("Socket error! \n");
+		}
 		if(FD_ISSET(clientsock, &readfds)) {
 			err = recvfrom(clientsock, recbuff, sizeof(recbuff),0,(struct sockaddr*) &serveraddr, &flen);
 			//if pingrequest received reset timer
@@ -107,6 +110,7 @@ int main(int argc, char** argv) {
 			if(consolelength > 0) {
 				err = sendMessage(consolebuffer, serveraddr, clientsock);
 				if(err < 0) {
+					printf("Sending message failed!\n");
 					return 0;
 				}
              }
@@ -180,8 +184,10 @@ int disconnectFromServer(struct sockaddr_in* serveraddr, int clientsock) {
 		}
 	}
 
-	if(err < 0)
+	if(err < 0) {
+		printf("Socket error!\n");
 		return -1;
+	}
     
     if(*reqbuff == 7) {
         printf("Verbindung erfolgreich beendet.\n");
@@ -204,8 +210,10 @@ int sendDisconnect(struct sockaddr_in* serveraddr, int clientsock) {
 	int err = 0;
 	uint8_t id = 6;
 	err = sendto(clientsock, &id, 1, 0, (struct sockaddr*) serveraddr, sizeof(struct sockaddr_in));
-	if(err < 0)  //error checking
+	if(err < 0) {  //error checking
+		printf("Sendto failed!\n");
 		return -1;
+	}
 	return 0;
 }
 
@@ -257,7 +265,7 @@ void parseRecBuffer(uint8_t* buff, int clientsocket, struct sockaddr_in serverad
                             break;
         case 11:    	printServerMessage(buff);
 							break;
-        default:    		printf("Received wrong message from server! ID: %i\n", *buff);
+        default:    		printf("Received wrong message from server!\n");
 							break;
     }
 }
