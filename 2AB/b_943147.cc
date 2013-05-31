@@ -13,13 +13,6 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("FirstScriptExample");
 
-static const uint32_t totalTxBytes = 20000;
-static uint32_t currentTxBytes = 0;
-static const uint32_t writeSize = 1040;
-uint8_t data[writeSize];
-
-void StartFlow (Ptr<Socket>, Ipv4Address, uint16_t);
-void WriteUntilBufferFull (Ptr<Socket>, uint32_t);
 
 int main(int argc, char** argv) {
 	Ptr<Node> nClient0 = CreateObject<Node>();
@@ -88,7 +81,6 @@ int main(int argc, char** argv) {
   	ApplicationContainer sinkApp = sinkHelper.Install (nServer);
   	sinkApp.Start (Seconds (1.0));
   	sinkApp.Stop (Seconds (10.0));
-	*/
 	
 	UdpEchoServerHelper echoServer (42);
 	ApplicationContainer serverApps = echoServer.Install (ncRouterClient0.Get (1));
@@ -103,6 +95,37 @@ int main(int argc, char** argv) {
 	ApplicationContainer clientApps = echoClient.Install (ncRouterClient0.Get(0));
 	clientApps.Start (Seconds (2.0));
 	clientApps.Stop (Seconds (10.0));
+	*/
+
+//Turn on global static routing
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+   
+    // Create a packet sink on the star "hub" to receive these packets
+    uint16_t port = 50000;
+    Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
+    PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkLocalAddress);
+    ApplicationContainer sinkApp = sinkHelper.Install (nServer);
+    sinkApp.Start (Seconds (1.0));
+    sinkApp.Stop (Seconds (10.0));
+
+
+	// Create the OnOff applications to send TCP to the server
+    OnOffHelper clientHelper ("ns3::TcpSocketFactory", Address ());
+    clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+    clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+   
+    //normally wouldn't need a loop here but the server IP address is different
+    //on each p2p subnet
+    ApplicationContainer clientApps;
+
+    AddressValue remoteAddress(InetSocketAddress (iRouterToC0.GetAddress (0), port));
+    clientHelper.SetAttribute ("Remote", remoteAddress);
+    clientApps.Add (clientHelper.Install (nServer));
+
+    clientApps.Start (Seconds (1.0));
+    clientApps.Stop (Seconds (10.0));
+	
+	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
     AsciiTraceHelper ascii;
     ptp.EnableAsciiAll (ascii.CreateFileStream ("first.tr"));
@@ -115,37 +138,3 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
- void StartFlow(Ptr<Socket> localSocket,
-                  Ipv4Address servAddress,
-                  uint16_t servPort)
-   {
-     NS_LOG_INFO ("Starting flow at time " <<  Simulator::Now ().GetSeconds ());
-     currentTxBytes = 0;
-     localSocket->Bind ();
-     localSocket->Connect (InetSocketAddress (servAddress, servPort));//connect
-   
-     // tell the tcp implementation to call WriteUntilBufferFull again
-     // if we blocked and new tx buffer space becomes available
-     localSocket->SetSendCallback (MakeCallback (&WriteUntilBufferFull));
-     WriteUntilBufferFull (localSocket, localSocket->GetTxAvailable ());
-   }
-
-void WriteUntilBufferFull (Ptr<Socket> localSocket, uint32_t txSpace)
-{
-	while (currentTxBytes < totalTxBytes && localSocket->GetTxAvailable () > 0)
-	{
-		uint32_t left = totalTxBytes - currentTxBytes;
-		uint32_t dataOffset = currentTxBytes % writeSize;
-		uint32_t toWrite = writeSize - dataOffset;
-		toWrite = std::min (toWrite, left);
-		toWrite = std::min (toWrite, localSocket->GetTxAvailable ());
-		int amountSent = localSocket->Send (&data[dataOffset], toWrite, 0);
-		if(amountSent < 0)
-		{
-			// we will be called again when new tx space becomes available.
-			return;
-		}
-		currentTxBytes += amountSent;
-	}
-	localSocket->Close ();
-}
