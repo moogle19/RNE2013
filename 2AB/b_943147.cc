@@ -109,7 +109,6 @@ int main(int argc, char** argv) {
     sinkApp.Start (Seconds (0.));
     sinkApp.Stop (Seconds (100.));
 
-	Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (nServer, TcpSocketFactory::GetTypeId ()); //source at Server
 	
     Address sinkLocalAddress1 (InetSocketAddress (iRouterToC1.GetAddress(0), port));
     PacketSinkHelper sinkHelper1 ("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
@@ -123,35 +122,20 @@ int main(int argc, char** argv) {
     sinkApp2.Start (Seconds (10.));
     sinkApp2.Stop (Seconds (100.));
 
-	/*Ptr<MyApp> app = CreateObject<MyApp> ();
-  	app->Setup (ns3TcpSocket, sinkLocalAddress, 1040, 100000, DataRate ("250Kbps"));
-  	nRouter->AddApplication (app);
-  	app->SetStartTime (Seconds (1.));
-  	app->SetStopTime (Seconds (100.));
-*/
-	// Create the OnOff applications to send TCP to the server
     OnOffHelper clientHelper ("ns3::TcpSocketFactory", Address ());
-    clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-    clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
     
 	OnOffHelper clientHelper1 ("ns3::TcpSocketFactory", Address ());
-    clientHelper1.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-    clientHelper1.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
     
 	OnOffHelper clientHelper2 ("ns3::TcpSocketFactory", Address ());
-    clientHelper2.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-    clientHelper2.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-   
-    //normally wouldn't need a loop here but the server IP address is different
-    //on each p2p subnet
-    ApplicationContainer clientApps;
+    
+	ApplicationContainer clientApps;
     AddressValue remoteAddress(InetSocketAddress (iRouterToC0.GetAddress (0), port));
     clientHelper.SetAttribute ("Remote", remoteAddress);
     clientApps.Add (clientHelper.Install (nServer));
-    clientApps.Start (Seconds (1.0));
+	clientApps.Start (Seconds (0.0));
     clientApps.Stop (Seconds (100.0));
-
-    ApplicationContainer clientApps1;
+    
+	ApplicationContainer clientApps1;
     AddressValue remoteAddress1(InetSocketAddress (iRouterToC1.GetAddress (0), port));
     clientHelper1.SetAttribute ("Remote", remoteAddress1);
     clientApps1.Add (clientHelper1.Install (nServer));
@@ -164,8 +148,8 @@ int main(int argc, char** argv) {
     clientApps2.Add (clientHelper2.Install (nServer));
     clientApps2.Start (Seconds (10.0));
     clientApps2.Stop (Seconds (100.0));
-
-    AsciiTraceHelper ascii;
+    
+	AsciiTraceHelper ascii;
     ptp.EnableAsciiAll (ascii.CreateFileStream ("first.tr"));
     ptp.EnablePcapAll ("first");
 	
