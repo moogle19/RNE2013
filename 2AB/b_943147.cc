@@ -101,60 +101,52 @@ int main(int argc, char** argv) {
 //Turn on global static routing
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
    
+	uint16_t port = 50000;
     // Create a packet sink on the star "hub" to receive these packets
-    uint16_t port = 50000;
-    Address sinkLocalAddress (InetSocketAddress (iRouterToC0.GetAddress(0), port));
-    PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
-    ApplicationContainer sinkApp = sinkHelper.Install (nClient0);
-    sinkApp.Start (Seconds (0.));
-    sinkApp.Stop (Seconds (100.));
-
+    Address sinkAddress (InetSocketAddress (iServerToRouter.GetAddress(0),port));
 	
-    Address sinkLocalAddress1 (InetSocketAddress (iRouterToC1.GetAddress(0), port));
-    PacketSinkHelper sinkHelper1 ("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
-    ApplicationContainer sinkApp1 = sinkHelper.Install (nClient1);
-    sinkApp1.Start (Seconds (5.));
-    sinkApp1.Stop (Seconds (100.));
-    
-	Address sinkLocalAddress2 (InetSocketAddress (iRouterToC2.GetAddress(0), port));
-    PacketSinkHelper sinkHelper2 ("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
-    ApplicationContainer sinkApp2 = sinkHelper.Install (nClient2);
-    sinkApp2.Start (Seconds (10.));
-    sinkApp2.Stop (Seconds (100.));
+    PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
+	ApplicationContainer sinkApps = sinkHelper.Install(nServer); 
+	sinkApps.Start(Seconds(0.0));
+	sinkApps.Stop(Seconds(70.0));
 
-    OnOffHelper clientHelper ("ns3::TcpSocketFactory", Address ());
-    
-	OnOffHelper clientHelper1 ("ns3::TcpSocketFactory", Address ());
-    
-	OnOffHelper clientHelper2 ("ns3::TcpSocketFactory", Address ());
-    
-	ApplicationContainer clientApps;
-    AddressValue remoteAddress(InetSocketAddress (iRouterToC0.GetAddress (0), port));
-    clientHelper.SetAttribute ("Remote", remoteAddress);
-    clientApps.Add (clientHelper.Install (nServer));
-	clientApps.Start (Seconds (0.0));
-    clientApps.Stop (Seconds (100.0));
-    
-	ApplicationContainer clientApps1;
-    AddressValue remoteAddress1(InetSocketAddress (iRouterToC1.GetAddress (0), port));
-    clientHelper1.SetAttribute ("Remote", remoteAddress1);
-    clientApps1.Add (clientHelper1.Install (nServer));
-    clientApps1.Start (Seconds (5.0));
-    clientApps1.Stop (Seconds (100.0));
-    
-	ApplicationContainer clientApps2;
-    AddressValue remoteAddress2(InetSocketAddress (iRouterToC2.GetAddress (0), port));
-    clientHelper2.SetAttribute ("Remote", remoteAddress2);
-    clientApps2.Add (clientHelper2.Install (nServer));
-    clientApps2.Start (Seconds (10.0));
-    clientApps2.Stop (Seconds (100.0));
-    
+	OnOffHelper onOffHelper ("ns3::TcpSocketFactory", sinkAddress);
+    //onOffHelper.SetAttribute ("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    //onOffHelper.SetAttribute ("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
+    //onOffHelper.SetAttribute ("PacketSize", UintegerValue (1500));	
+	
+	ApplicationContainer source;
+    source.Add (onOffHelper.Install (nClient0));
+    source.Start (Seconds (5.));
+    source.Stop (Seconds (65.));	
+	
+	ApplicationContainer source1;
+    source1.Add (onOffHelper.Install (nClient1));
+    source1.Start (Seconds (10.));
+    source1.Stop (Seconds (65.));	
+
+	ApplicationContainer source2;
+    source2.Add (onOffHelper.Install (nClient2));
+    source2.Start (Seconds (15.));
+    source2.Stop (Seconds (65.));	
+	
+	ApplicationContainer source3;
+    source3.Add (onOffHelper.Install (nClient3));
+    source3.Start (Seconds (20.));
+    source3.Stop (Seconds (65.));	
+	
+	ApplicationContainer source4;
+    source4.Add (onOffHelper.Install (nClient4));
+    source4.Start (Seconds (25.));
+    source4.Stop (Seconds (65.));	
+	
 	AsciiTraceHelper ascii;
     ptp.EnableAsciiAll (ascii.CreateFileStream ("first.tr"));
     ptp.EnablePcapAll ("first");
 	
-	Simulator::Stop (Seconds (100));
 	Simulator::Run ();
+	Simulator::Stop (Seconds (70));
 	Simulator::Destroy ();
 
 	return 0;
