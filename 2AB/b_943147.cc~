@@ -9,6 +9,7 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/gnuplot.h"
 
 using namespace ns3;
 
@@ -18,7 +19,7 @@ NS_LOG_COMPONENT_DEFINE ("FirstScriptExample");
 int main(int argc, char** argv) {
 	LogComponentEnable("FirstScriptExample", LOG_LEVEL_INFO);
 	NS_LOG_INFO("START");
-/*
+	
 	Ptr<Node> nClient0 = CreateObject<Node>();
 	Ptr<Node> nClient1 = CreateObject<Node>();
 	Ptr<Node> nClient2 = CreateObject<Node>();
@@ -35,19 +36,16 @@ int main(int argc, char** argv) {
 	ncAll.Add(nClient4);
 	ncAll.Add(nRouter);
 	ncAll.Add(nServer);
-*/
-	NodeContainer ncAll;
-	ncAll.Create(7);
 
 	InternetStackHelper stack;
 	stack.Install(ncAll);	
 
-	NodeContainer ncRouterClient0 = NodeContainer(ncAll.Get(0), ncAll.Get(5));
-	NodeContainer ncRouterClient1 = NodeContainer(ncAll.Get(1), ncAll.Get(5));
-	NodeContainer ncRouterClient2 = NodeContainer(ncAll.Get(2), ncAll.Get(5));
-	NodeContainer ncRouterClient3 = NodeContainer(ncAll.Get(3), ncAll.Get(5));
-	NodeContainer ncRouterClient4 = NodeContainer(ncAll.Get(4), ncAll.Get(5));
-	NodeContainer ncServerRouter = NodeContainer(ncAll.Get(6), ncAll.Get(5));
+	NodeContainer ncRouterClient0 = NodeContainer(nClient0, nRouter);
+	NodeContainer ncRouterClient1 = NodeContainer(nClient1, nRouter);
+	NodeContainer ncRouterClient2 = NodeContainer(nClient2, nRouter);
+	NodeContainer ncRouterClient3 = NodeContainer(nClient3, nRouter);
+	NodeContainer ncRouterClient4 = NodeContainer(nClient4, nRouter);
+	NodeContainer ncServerRouter = NodeContainer(nRouter, nServer);
 	
 	PointToPointHelper ptp;
 	ptp.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
@@ -79,73 +77,70 @@ int main(int argc, char** argv) {
 	
 	//GlobalValue::Bind("ChecksumEnabled", BooleanValue("true"));
 	
-	AsciiTraceHelper ascii;
-    ptp.EnableAsciiAll (ascii.CreateFileStream ("first.tr"));
-
-	const uint16_t port = 55555;
+	uint16_t port = 50000;
 	
+    PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
+	ApplicationContainer sinkApps = sinkHelper.Install(nClient0); 
+	sinkApps.Start(Seconds(5.0));
+	sinkApps.Stop(Seconds(65.0));
+
 	OnOffHelper onOffHelperC0 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC0.GetAddress(0), port)));
-    	onOffHelperC0.SetConstantRate(DataRate("1Mbps"));
-	ApplicationContainer sinkApps = onOffHelperC0.Install(ncAll.Get(6));
+    onOffHelperC0.SetConstantRate(DataRate("1Mbps"));
+	sinkApps = onOffHelperC0.Install(nServer);
 	sinkApps.Start(Seconds(5.0));
 	sinkApps.Stop(Seconds(65.0));
-
-    	PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), port)));
-	sinkApps = sinkHelper.Install(ncAll.Get(0)); 
-	sinkApps.Start(Seconds(5.0));
+	
+	sinkApps = sinkHelper.Install(nClient1); 
+	sinkApps.Start(Seconds(10.0));
 	sinkApps.Stop(Seconds(65.0));
-
 
 	OnOffHelper onOffHelperC1 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC1.GetAddress(0), port)));
-    	onOffHelperC1.SetConstantRate(DataRate("1Mbps"));
-	sinkApps = onOffHelperC1.Install(ncAll.Get(6));
+    onOffHelperC1.SetConstantRate(DataRate("1Mbps"));
+	sinkApps = onOffHelperC1.Install(nServer);
 	sinkApps.Start(Seconds(10.0));
 	sinkApps.Stop(Seconds(65.0));
 	
-	sinkApps = sinkHelper.Install(ncAll.Get(1)); 
-	sinkApps.Start(Seconds(10.0));
+	
+	sinkApps = sinkHelper.Install(nClient2); 
+	sinkApps.Start(Seconds(15.0));
 	sinkApps.Stop(Seconds(65.0));
-
 
 	OnOffHelper onOffHelperC2 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC2.GetAddress(0), port)));
-    	onOffHelperC2.SetConstantRate(DataRate("1Mbps"));
-	sinkApps = onOffHelperC2.Install(ncAll.Get(6));
+    onOffHelperC1.SetConstantRate(DataRate("1Mbps"));
+	sinkApps = onOffHelperC2.Install(nServer);
 	sinkApps.Start(Seconds(15.0));
 	sinkApps.Stop(Seconds(65.0));
 	
-	sinkApps = sinkHelper.Install(ncAll.Get(2)); 
-	sinkApps.Start(Seconds(15.0));
+	
+	sinkApps = sinkHelper.Install(nClient3); 
+	sinkApps.Start(Seconds(20.0));
 	sinkApps.Stop(Seconds(65.0));
-
 
 	OnOffHelper onOffHelperC3 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC3.GetAddress(0), port)));
-	onOffHelperC3.SetConstantRate(DataRate("1Mbps"));
-	sinkApps = onOffHelperC3.Install(ncAll.Get(6));
+    onOffHelperC1.SetConstantRate(DataRate("1Mbps"));
+	sinkApps = onOffHelperC3.Install(nServer);
 	sinkApps.Start(Seconds(20.0));
 	sinkApps.Stop(Seconds(65.0));
 	
-	sinkApps = sinkHelper.Install(ncAll.Get(3)); 
-	sinkApps.Start(Seconds(20.0));
-	sinkApps.Stop(Seconds(65.0));
 
+	sinkApps = sinkHelper.Install(nClient4); 
+	sinkApps.Start(Seconds(25.0));
+	sinkApps.Stop(Seconds(65.0));
 
 	OnOffHelper onOffHelperC4 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC4.GetAddress(0), port)));
-    	onOffHelperC4.SetConstantRate(DataRate("1Mbps"));
-	sinkApps = onOffHelperC4.Install(ncAll.Get(6));
+    onOffHelperC1.SetConstantRate(DataRate("1Mbps"));
+	sinkApps = onOffHelperC4.Install(nServer);
 	sinkApps.Start(Seconds(25.0));
 	sinkApps.Stop(Seconds(65.0));
-
-	sinkApps = sinkHelper.Install(ncAll.Get(4)); 
-	sinkApps.Start(Seconds(25.0));
-	sinkApps.Stop(Seconds(65.0));
-
 	
-	sinkApps = sinkHelper.Install(ncAll.Get(5));
+	sinkApps = sinkHelper.Install(nRouter);
 	sinkApps.Start(Seconds(5.0));
 	sinkApps.Stop(Seconds(65.0));
 
 
-    //ptp.EnablePcapAll ("first");
+	AsciiTraceHelper ascii;
+    ptp.EnableAsciiAll (ascii.CreateFileStream ("first.tr"));
+    ptp.EnablePcapAll ("first");
 
 		
 
