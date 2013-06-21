@@ -4,11 +4,14 @@
 #include <cassert>
 #include <stdio.h>
 
+#include "ns3/random-variable.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/error-model.h"
+
 
 using namespace ns3;
 
@@ -146,12 +149,17 @@ int main(int argc, char** argv) {
 
 
     //ptp.EnablePcapAll ("first");
+	Ptr<RateErrorModel> em = CreateObjectWithAttributes<RateErrorModel> ("ErrorRate", DoubleValue (0.1), "ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
+	Ptr<UniformRandomVariable> urand = CreateObject<UniformRandomVariable>();
+  	em->SetRandomVariable(urand);
 
-		
+ 	ServerToRouter.Get(0)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
+  	ServerToRouter.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
 
 
 	NS_LOG_INFO("RUN");
 	Simulator::Stop (Seconds (70));
+
 	Simulator::Run ();
 	
 	Simulator::Destroy ();
