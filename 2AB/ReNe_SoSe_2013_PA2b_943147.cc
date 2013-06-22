@@ -88,57 +88,35 @@ int main(int argc, char** argv) {
 	//enable Ascii Trace
 	AsciiTraceHelper ascii;
     ptp.EnableAsciiAll (ascii.CreateFileStream ("ReNe_SoSe_2013_PA2b_943147.tr"));
-
+	
+	//set portnumber
 	uint16_t port = 50000;
 
-/**
-	 * Install OnOffHelper and PacketSinkHelper for every Node to send and receiver Packets
-	 */	
-
+	
+	//Install OnOffHelper to Server for every node
 	OnOffHelper onOffHelperC0 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC0.GetAddress(0), port)));
     	onOffHelperC0.SetConstantRate(DataRate("1Mbps"));
 	ApplicationContainer sinkApps = onOffHelperC0.Install(nServer);
 	sinkApps.Start(Seconds(5.0));
 	sinkApps.Stop(Seconds(65.0));
 
-    	PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), port)));
-	sinkApps = sinkHelper.Install(nClient0); 
-	sinkApps.Start(Seconds(5.0));
-	sinkApps.Stop(Seconds(65.0));
-
-
 	OnOffHelper onOffHelperC1 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC1.GetAddress(0), port)));
     	onOffHelperC1.SetConstantRate(DataRate("1Mbps"));
 	sinkApps = onOffHelperC1.Install(nServer);
 	sinkApps.Start(Seconds(10.0));
 	sinkApps.Stop(Seconds(65.0));
-	
-	sinkApps = sinkHelper.Install(nClient1); 
-	sinkApps.Start(Seconds(10.0));
-	sinkApps.Stop(Seconds(65.0));
-
 
 	OnOffHelper onOffHelperC2 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC2.GetAddress(0), port)));
     	onOffHelperC2.SetConstantRate(DataRate("1Mbps"));
 	sinkApps = onOffHelperC2.Install(nServer);
 	sinkApps.Start(Seconds(15.0));
 	sinkApps.Stop(Seconds(65.0));
-	
-	sinkApps = sinkHelper.Install(nClient2); 
-	sinkApps.Start(Seconds(15.0));
-	sinkApps.Stop(Seconds(65.0));
-
 
 	OnOffHelper onOffHelperC3 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC3.GetAddress(0), port)));
 	onOffHelperC3.SetConstantRate(DataRate("1Mbps"));
 	sinkApps = onOffHelperC3.Install(nServer);
 	sinkApps.Start(Seconds(20.0));
 	sinkApps.Stop(Seconds(65.0));
-	
-	sinkApps = sinkHelper.Install(nClient3); 
-	sinkApps.Start(Seconds(20.0));
-	sinkApps.Stop(Seconds(65.0));
-
 
 	OnOffHelper onOffHelperC4 ("ns3::TcpSocketFactory", Address(InetSocketAddress (iRouterToC4.GetAddress(0), port)));
     	onOffHelperC4.SetConstantRate(DataRate("1Mbps"));
@@ -146,10 +124,28 @@ int main(int argc, char** argv) {
 	sinkApps.Start(Seconds(25.0));
 	sinkApps.Stop(Seconds(65.0));
 
+
+	//Install PacketSinkHelper to every node
+    	PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), port)));
+	sinkApps = sinkHelper.Install(nClient0); 
+	sinkApps.Start(Seconds(5.0));
+	sinkApps.Stop(Seconds(65.0));
+	
+	sinkApps = sinkHelper.Install(nClient1); 
+	sinkApps.Start(Seconds(10.0));
+	sinkApps.Stop(Seconds(65.0));
+	
+	sinkApps = sinkHelper.Install(nClient2); 
+	sinkApps.Start(Seconds(15.0));
+	sinkApps.Stop(Seconds(65.0));
+	
+	sinkApps = sinkHelper.Install(nClient3); 
+	sinkApps.Start(Seconds(20.0));
+	sinkApps.Stop(Seconds(65.0));
+
 	sinkApps = sinkHelper.Install(nClient4); 
 	sinkApps.Start(Seconds(25.0));
 	sinkApps.Stop(Seconds(65.0));
-
 	
 	sinkApps = sinkHelper.Install(nRouter);
 	sinkApps.Start(Seconds(5.0));
