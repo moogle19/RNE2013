@@ -56,7 +56,8 @@ int main(int argc, char** argv) {
 	PointToPointHelper ptp;
 	ptp.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
 	ptp.SetChannelAttribute("Delay", StringValue("20ms"));
-	
+	ptp.SetQueue("ns3::DropTailQueue");
+		
 	//Install Point-to-Point connections
 	NetDeviceContainer RouterToC0 = ptp.Install(ncRouterClient0);
 	NetDeviceContainer RouterToC1 = ptp.Install(ncRouterClient1);

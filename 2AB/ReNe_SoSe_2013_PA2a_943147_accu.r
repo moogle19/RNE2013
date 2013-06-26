@@ -5,5 +5,5 @@ pdf(file="ReNe_SoSe_2013_PA2a_943147_accu.pdf", onefile=TRUE, pagecentre=TRUE, w
 file <- read.csv(file="./ReNe_SoSe_2013_PA2a_943147_accuthroughput.csv", head=TRUE, sep=",")
 
 print(
-  qplot(time,bytes,data=file,geom="line",color=node, xlab="Time [s]", ylab="Accumulated Throughput [kbit]", main="Accumulated throughput")
+	ggplot(data = file, aes(x=time, y=bytes)) + geom_line(aes(colour=node)) + ylab("Accumulated Throughput [kb]") + xlab("Time [s]") + ggtitle("A: Accumulated Throughput")
 )
